@@ -135,3 +135,55 @@ class Evaluation:
         for key in err_entity.keys():
             err_entity[key] = torch.tensor(err_entity[key])
         return err_entity
+
+    def get_symmetric_relation(self):
+        symmetric_relation_index = []
+        for index_1, triplet_1 in enumerate(self.dataset):
+            for index_2, triplet_2 in enumerate(self.dataset):
+                if torch.all(torch.eq(triplet_1, triplet_2)):
+                    continue
+                if triplet_1[1] == triplet_2[1] and triplet_1[0] == triplet_2[2] and triplet_1[2] == triplet_2[0]:
+                    symmetric_relation_index.append(index_1)
+                    symmetric_relation_index.append(index_2)
+        return list(set(symmetric_relation_index))
+
+    def get_asymmetric_relation(self):
+        all_index = list(range(0, len(self.dataset)))
+        symmetric_relation_index = self.get_symmetric_relation()
+        all_index_set  = set(all_index)
+        symmetric_relation_index_set = set(symmetric_relation_index)
+        return list(all_index_set - symmetric_relation_index_set)
+
+    def one_to_many_relation(self):
+        one_to_many_index = []
+        for index_1, triplet_1 in enumerate(self.dataset):
+            for index_2, triplet_2 in enumerate(self.dataset):
+                if torch.all(torch.eq(triplet_1, triplet_2)):
+                    continue
+                if triplet_1[0] == triplet_2[0] and triplet_1[1] == triplet_2[1]:
+                    one_to_many_index.append(index_1)
+                    one_to_many_index.append(index_2)
+        return list(set(one_to_many_index))
+
+    def many_to_one_relation(self):
+        many_to_one_index = []
+        for index_1, triplet_1 in enumerate(self.dataset):
+            for index_2, triplet_2 in enumerate(self.dataset):
+                if torch.all(torch.eq(triplet_1, triplet_2)):
+                    continue
+                if triplet_1[1] == triplet_2[1] and triplet_1[2] == triplet_2[2]:
+                    many_to_one_index.append(index_1)
+                    many_to_one_index.append(index_2)
+        return list(set(many_to_one_index))
+
+    def one_to_one_relation(self):
+        many_to_one_index_set = set(self.many_to_one_relation())
+        one_to_many_index_set = set(self.one_to_many_relation())
+        all_index_set = set(list(range(0, len(self.dataset))))
+        return list(all_index_set - one_to_many_index_set.union(many_to_one_index_set))
+
+    def many_to_many_relation(self):
+        many_to_one_index_set = set(self.many_to_one_relation())
+        one_to_many_index_set = set(self.one_to_many_relation())
+        return list(one_to_many_index_set.intersection(many_to_one_index_set))
+
